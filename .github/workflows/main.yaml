@@ -8,6 +8,9 @@ on:
   schedule:
     - cron: '30 10 1 * *'
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   build:
     runs-on: ubuntu-24.04
@@ -17,7 +20,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # 📅 تاريخ (باش الكاش يتحدث)
+      # 📅 تاريخ للكاش
       - name: Get Date
         id: get-date
         run: echo "date=$(date -u +'%Y%m%d')" >> $GITHUB_OUTPUT
@@ -38,14 +41,14 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-
 
-      # 📦 تثبيت dependencies
+      # 📦 تثبيت dependencies (FIX libtinfo)
       - name: Install system dependencies
         run: |
           sudo apt update
           sudo apt install -y \
             git zip unzip openjdk-17-jdk python3-pip \
             autoconf libtool pkg-config zlib1g-dev \
-            libncurses5-dev libncursesw5-dev libtinfo5 \
+            libncurses5-dev libncursesw5-dev libtinfo6 \
             cmake libffi-dev libssl-dev
 
       # 🐍 تثبيت Buildozer
