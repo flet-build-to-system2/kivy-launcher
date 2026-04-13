@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    - cron: '30 10 1 * *'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # إصلاح مشكلة set-output
+      - name: Get Date
+        id: get-date
+        run: echo "date=$(date -u +'%Y%m%d')" >> $GITHUB_OUTPUT
+
+      # Cache global buildozer
+      - name: Cache Buildozer global directory
+        uses: actions/cache@v3
+        with:
+          path: .buildozer_global
+          key: buildozer-global-${{ hashFiles('buildozer.spec') }}
+
+      # Cache local buildozer
+      - name: Cache Buildozer directory
+        uses: actions/cache@v3
+        with:
+          path: .buildozer
+          key: ${{ runner.os }}-${{ steps.get-date.outputs.date }}-${{ hashFiles('buildozer.spec') }}
+          restore-keys: |
+            ${{ runner.os }}-
+
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y \
+            git zip unzip openjdk-17-jdk python3-pip \
+            autoconf libtool pkg-config zlib1g-dev \
+            libncurses5-dev libncursesw5-dev libtinfo5 \
+            cmake libffi-dev libssl-dev
+
+      - name: Install Buildozer
+        run: |
+          pip3 install --user --upgrade buildozer Cython virtualenv
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Build APK with Buildozer
+        run: |
+          export APP_ANDROID_ACCEPT_SDK_LICENSE=1
+          export BUILDOZER_WARN_ON_ROOT=0
+          buildozer android debug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v3
+        with:
+          name: apk-package
+          path: bin/*.apk
